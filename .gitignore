@@ -34,4 +34,5 @@
 /check.vcd
 /synth.log
 /synth.v
+/.codegraph/
 .*.swp
