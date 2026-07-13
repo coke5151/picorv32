@@ -2,8 +2,8 @@
 RISCV_GNU_TOOLCHAIN_GIT_REVISION = 411d134
 RISCV_GNU_TOOLCHAIN_INSTALL_PREFIX = /opt/riscv32
 
-# Give the user some easy overrides for local configuration quirks.
-# If you change one of these and it breaks, then you get to keep both pieces.
+# 本機工具設定：可在 command line 覆寫，例如 make IVERILOG=iverilog TOOLCHAIN_PREFIX=riscv64-unknown-elf-
+# 這份上游 Makefile 預設在 Linux/bash 環境執行；Windows 建議使用 WSL 或 OSS CAD Suite shell。
 SHELL = bash
 PYTHON = python3
 VERILATOR = verilator
@@ -12,6 +12,7 @@ IVERILOG = iverilog$(ICARUS_SUFFIX)
 VVP = vvp$(ICARUS_SUFFIX)
 
 TEST_OBJS = $(addsuffix .o,$(basename $(wildcard tests/*.S)))
+# 完整 regression firmware 會連結這些 C/Assembly object 和 tests/*.S。
 FIRMWARE_OBJS = firmware/start.o firmware/irq.o firmware/print.o firmware/hello.o firmware/sieve.o firmware/multest.o firmware/stats.o
 GCC_WARNS  = -Werror -Wall -Wextra -Wshadow -Wundef -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings
 GCC_WARNS += -Wredundant-decls -Wstrict-prototypes -Wmissing-prototypes -pedantic # -Wconversion
@@ -21,6 +22,7 @@ COMPRESSED_ISA = C
 # Add things like "export http_proxy=... https_proxy=..." here
 GIT_ENV = true
 
+# test_* 是模擬入口；test_ez 不需要 compiler，其餘多半先建立 firmware.hex。
 test: testbench.vvp firmware/firmware.hex
 	$(VVP) -N $<
 
@@ -54,6 +56,7 @@ test_synth: testbench_synth.vvp firmware/firmware.hex
 test_verilator: testbench_verilator firmware/firmware.hex
 	./testbench_verilator
 
+# Icarus 先把 Verilog 編譯成 .vvp，再由 vvp 執行；加 C 時同時啟用 compressed ISA define。
 testbench.vvp: testbench.v picorv32.v
 	$(IVERILOG) -o $@ $(subst C,-DCOMPRESSED_ISA,$(COMPRESSED_ISA)) $^
 	chmod -x $@
@@ -99,6 +102,7 @@ check.smt2: picorv32.v
 synth.v: picorv32.v scripts/yosys/synth_sim.ys
 	yosys -qv3 -l synth.log scripts/yosys/synth_sim.ys
 
+# firmware 建置鏈：C/S → object → ELF → raw BIN → testbench 用 HEX。
 firmware/firmware.hex: firmware/firmware.bin firmware/makehex.py
 	$(PYTHON) firmware/makehex.py $< 32768 > $@
 
@@ -122,6 +126,7 @@ tests/%.o: tests/%.S tests/riscv_test.h tests/test_macros.h
 	$(TOOLCHAIN_PREFIX)gcc -c -mabi=ilp32 -march=rv32im -o $@ -DTEST_FUNC_NAME=$(notdir $(basename $<)) \
 		-DTEST_FUNC_TXT='"$(notdir $(basename $<))"' -DTEST_FUNC_RET=$(notdir $(basename $<))_ret $<
 
+# 以下 target 會下載/編譯整套舊版 toolchain，耗時且會寫 /opt；一般使用者可改裝發行版現成套件。
 download-tools:
 	sudo bash -c 'set -ex; mkdir -p /var/cache/distfiles; $(GIT_ENV); \
 	$(foreach REPO,riscv-gnu-toolchain riscv-binutils-gdb riscv-gcc riscv-glibc riscv-newlib, \

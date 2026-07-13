@@ -24,6 +24,7 @@
 `define PICOSOC_MEM ice40up5k_spram
 
 module icebreaker (
+	// iCEBreaker 板級 top：此處 pin 名稱必須搭配 icebreaker.pcf，不能直接用在其他板。
 	input clk,
 
 	output ser_tx,
@@ -47,6 +48,7 @@ module icebreaker (
 );
 	parameter integer MEM_WORDS = 32768;
 
+	// configuration 後等待 63 個 clock 才解除 reset，讓 SoC/Flash I/O 先穩定。
 	reg [5:0] reset_cnt = 0;
 	wire resetn = &reset_cnt;
 
@@ -70,6 +72,7 @@ module icebreaker (
 	wire flash_io2_oe, flash_io2_do, flash_io2_di;
 	wire flash_io3_oe, flash_io3_do, flash_io3_di;
 
+	// iCE40 bidirectional I/O primitive，將每條 QSPI pin 拆成 output-enable/output/input。
 	SB_IO #(
 		.PIN_TYPE(6'b 1010_01),
 		.PULLUP(1'b 0)
@@ -87,6 +90,7 @@ module icebreaker (
 	wire [31:0] iomem_wdata;
 	reg  [31:0] iomem_rdata;
 
+	// 板級 peripheral：0x03xx_xxxx 的 32-bit GPIO，低 8 bit 接 LED。
 	reg [31:0] gpio;
 	assign leds = gpio;
 
@@ -106,6 +110,7 @@ module icebreaker (
 		end
 	end
 
+	// UP5K 有專用 SPRAM；檔首 PICOSOC_MEM macro 讓 picosoc.v 使用 ice40up5k_spram。
 	picosoc #(
 		.BARREL_SHIFTER(0),
 		.ENABLE_MUL(0),

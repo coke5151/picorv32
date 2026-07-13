@@ -9,6 +9,7 @@
 
 `ifndef VERILATOR
 module testbench #(
+	// 完整回歸測試平台，可依 parameter 切換 Native/AXI、memory latency 與 CPU 功能。
 	parameter AXI_TEST = 0,
 	parameter VERBOSE = 0
 );
@@ -65,6 +66,7 @@ endmodule
 `endif
 
 module picorv32_wrapper #(
+	// 將待測 core、memory model 與 testbench MMIO 接在一起；不是 FPGA 板級 top。
 	parameter AXI_TEST = 0,
 	parameter VERBOSE = 0
 ) (
@@ -275,6 +277,7 @@ module picorv32_wrapper #(
 endmodule
 
 module axi4_memory #(
+	// 簡化的 AXI4-Lite memory model，只供模擬驗證 wrapper handshake。
 	parameter AXI_TEST = 0,
 	parameter VERBOSE = 0
 ) (

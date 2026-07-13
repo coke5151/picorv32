@@ -28,10 +28,11 @@
 #  error "Set -DICEBREAKER or -DHX8KDEMO when compiling firmware.c"
 #endif
 
-// a pointer to this is a null pointer, but the compiler does not
-// know that because "sram" is a linker symbol from sections.lds.
+// sram 是 sections.lds 定義在位址 0 的 linker symbol。compiler 把它視為外部 symbol，
+// 不會因為最後解析成 null address 就把相關 memory access 最佳化掉。
 extern uint32_t sram;
 
+// Memory-mapped I/O：volatile 保證每次 C 存取都真的產生 bus transaction。
 #define reg_spictrl (*(volatile uint32_t*)0x02000000)
 #define reg_uart_clkdiv (*(volatile uint32_t*)0x02000004)
 #define reg_uart_data (*(volatile uint32_t*)0x02000008)
@@ -44,6 +45,7 @@ extern uint32_t flashio_worker_end;
 
 void flashio(uint8_t *data, int len, uint8_t wrencmd)
 {
+	// manual SPI 期間 Flash 無法供 CPU XIP，所以先把 assembly worker 複製到 stack 上的 RAM array。
 	uint32_t func[&flashio_worker_end - &flashio_worker_begin];
 
 	uint32_t *src_ptr = &flashio_worker_begin;
@@ -157,6 +159,7 @@ void enable_flash_crm()
 
 void putchar(char c)
 {
+	// terminal 慣例使用 CRLF；寫 UART data register 若 TX busy，硬體會讓 CPU 自動等待。
 	if (c == '\n')
 		putchar('\r');
 	reg_uart_data = c;
@@ -229,6 +232,7 @@ char getchar_prompt(char *prompt)
 	if (prompt)
 		print(prompt);
 
+	// UART 沒收到資料時 register 回傳 -1；等待期間週期性重印提示並切換 LED。
 	while (c == -1) {
 		__asm__ volatile ("rdcycle %0" : "=r"(cycles_now));
 		cycles = cycles_now - cycles_begin;

@@ -34,6 +34,7 @@
 `define PICOSOC_V
 
 module picosoc (
+	// PicoSoC 中央整合模組：CPU 的每筆 load/store/fetch 都在這裡 decode 到 RAM、Flash、UART 或外部 I/O。
 	input clk,
 	input resetn,
 
@@ -77,11 +78,13 @@ module picosoc (
 	parameter [0:0] ENABLE_COUNTERS = 1;
 	parameter [0:0] ENABLE_IRQ_QREGS = 0;
 
+	// MEM_WORDS 單位是 32-bit word，不是 byte；RAM 容量為 4*MEM_WORDS bytes。
 	parameter integer MEM_WORDS = 256;
 	parameter [31:0] STACKADDR = (4*MEM_WORDS);       // end of memory
 	parameter [31:0] PROGADDR_RESET = 32'h 0010_0000; // 1 MB into flash
 	parameter [31:0] PROGADDR_IRQ = 32'h 0000_0000;
 
+	// IRQ 3/4 預留給 stall/UART，目前固定為 0；5~7 由板級 top 傳入。
 	reg [31:0] irq;
 	wire irq_stall = 0;
 	wire irq_uart = 0;
@@ -109,6 +112,8 @@ module picosoc (
 	reg ram_ready;
 	wire [31:0] ram_rdata;
 
+	// 0x02xx_xxxx 以上都送出 iomem。內建 SPI/UART 也會同時 decode 0x0200_000x；
+	// 板級 top 只應對自己負責的範圍（範例為 0x03xx_xxxx）拉高 iomem_ready。
 	assign iomem_valid = mem_valid && (mem_addr[31:24] > 8'h 01);
 	assign iomem_wstrb = mem_wstrb;
 	assign iomem_addr = mem_addr;
@@ -124,6 +129,7 @@ module picosoc (
 	wire [31:0] simpleuart_reg_dat_do;
 	wire        simpleuart_reg_dat_wait;
 
+	// 所有 slave 的 ready/rdata 合成 CPU 唯一的回應。address decode 必須互斥，避免兩個 slave 同時回覆。
 	assign mem_ready = (iomem_valid && iomem_ready) || spimem_ready || ram_ready || spimemio_cfgreg_sel ||
 			simpleuart_reg_div_sel || (simpleuart_reg_dat_sel && !simpleuart_reg_dat_wait);
 
@@ -131,6 +137,7 @@ module picosoc (
 			spimemio_cfgreg_sel ? spimemio_cfgreg_do : simpleuart_reg_div_sel ? simpleuart_reg_div_do :
 			simpleuart_reg_dat_sel ? simpleuart_reg_dat_do : 32'h 0000_0000;
 
+	// CPU reset 後從 SPI Flash 0x0010_0000 XIP；stack 放在 scratchpad RAM 尾端。
 	picorv32 #(
 		.STACKADDR(STACKADDR),
 		.PROGADDR_RESET(PROGADDR_RESET),
@@ -156,6 +163,7 @@ module picosoc (
 		.irq         (irq        )
 	);
 
+	// RAM 結尾到 0x01ff_ffff 是 SPI Flash memory window；傳給 controller 的是低 24-bit Flash address。
 	spimemio spimemio (
 		.clk    (clk),
 		.resetn (resetn),
@@ -187,6 +195,7 @@ module picosoc (
 		.cfgreg_do(spimemio_cfgreg_do)
 	);
 
+	// 0x0200_0004 是 baud divider，0x0200_0008 是 blocking UART data register。
 	simpleuart simpleuart (
 		.clk         (clk         ),
 		.resetn      (resetn      ),
@@ -205,6 +214,7 @@ module picosoc (
 		.reg_dat_wait(simpleuart_reg_dat_wait)
 	);
 
+	// generic RAM 是同步 read，因此收到請求後延遲一拍才對 CPU 拉高 ready。
 	always @(posedge clk)
 		ram_ready <= mem_valid && !mem_ready && mem_addr < 4*MEM_WORDS;
 
@@ -219,8 +229,8 @@ module picosoc (
 	);
 endmodule
 
-// Implementation note:
-// Replace the following two modules with wrappers for your SRAM cells.
+// 實作提醒：下面是可攜的 behavioral array。換 FPGA 時可用 wrapper 替換成 block RAM/SPRAM primitive，
+// 但必須維持相同介面時序。PICOSOC_MEM macro 就是供板級 top 選擇替代 RAM。
 
 module picosoc_regs (
 	input clk, wen,

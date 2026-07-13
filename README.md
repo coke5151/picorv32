@@ -3,6 +3,13 @@
 PicoRV32 - A Size-Optimized RISC-V CPU
 ======================================
 
+繁體中文學習入口
+----------------
+
+如果你是第一次接觸這個專案，建議先讀 [`docs/README.md`](docs/README.md)。裡面依照「認識
+repository → 看懂 CPU 與匯流排 → 理解 firmware → 模擬 → 放上 FPGA」安排閱讀順序，並整理
+PicoSoC 的記憶體配置、常見工具與移植檢查表。原本的英文 README 保留在下方，方便對照上游文件。
+
 PicoRV32 is a CPU core that implements the [RISC-V RV32IMC Instruction Set](http://riscv.org/).
 It can be configured as RV32E, RV32I, RV32IC, RV32IM, or RV32IMC core, and optionally
 contains a built-in interrupt controller.

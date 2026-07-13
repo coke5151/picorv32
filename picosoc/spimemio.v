@@ -18,6 +18,8 @@
  */
 
 module spimemio (
+	// 把 CPU memory read 轉成 SPI/Dual/Quad/DDR Flash transaction，供 XIP 使用。
+	// cfgreg 也可切到 manual mode，讓 firmware 直接控制 CS/CLK/data pin 寫 Flash register。
 	input clk, resetn,
 
 	input valid,
@@ -376,6 +378,7 @@ module spimemio (
 endmodule
 
 module spimemio_xfer (
+	// 底層 serial shifter：上層提供 bit count、DDR/QSPI 模式與 output-enable，本模組逐拍完成傳輸。
 	input clk, resetn,
 
 	input            din_valid,

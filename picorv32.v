@@ -60,6 +60,7 @@
  ***************************************************************/
 
 module picorv32 #(
+	// 功能/面積參數：關閉功能通常可省 LUT，但 compiler 的 -march 必須和硬體一致。
 	parameter [ 0:0] ENABLE_COUNTERS = 1,
 	parameter [ 0:0] ENABLE_COUNTERS64 = 1,
 	parameter [ 0:0] ENABLE_REGS_16_31 = 1,
@@ -81,6 +82,7 @@ module picorv32 #(
 	parameter [ 0:0] ENABLE_IRQ_TIMER = 1,
 	parameter [ 0:0] ENABLE_TRACE = 0,
 	parameter [ 0:0] REGS_INIT_ZERO = 0,
+	// IRQ 與開機位址參數。PROGADDR_RESET 必須和 linker script 的程式起點一致。
 	parameter [31:0] MASKED_IRQ = 32'h 0000_0000,
 	parameter [31:0] LATCHED_IRQ = 32'h ffff_ffff,
 	parameter [31:0] PROGADDR_RESET = 32'h 0000_0000,
@@ -88,8 +90,11 @@ module picorv32 #(
 	parameter [31:0] STACKADDR = 32'h ffff_ffff
 ) (
 	input clk, resetn,
+	// trap 拉高代表 core 遇到無法處理的錯誤並停住；上板除錯時建議接到 debug pin/LED。
 	output reg trap,
 
+	// Native Memory Interface：mem_valid 與 mem_ready 同時為 1 的 clock edge 完成一次交易。
+	// mem_wstrb=0 是 read；各 bit 對應 mem_wdata 的一個 byte lane。
 	output reg        mem_valid,
 	output reg        mem_instr,
 	input             mem_ready,
@@ -99,14 +104,15 @@ module picorv32 #(
 	output reg [ 3:0] mem_wstrb,
 	input      [31:0] mem_rdata,
 
-	// Look-Ahead Interface
+	// Look-Ahead Interface：比正式 mem_valid 提早一拍預告下一筆存取，供同步 RAM 降低等待時間。
+	// 初次整合可不使用這組訊號，直接實作上方 Native Memory Interface。
 	output            mem_la_read,
 	output            mem_la_write,
 	output     [31:0] mem_la_addr,
 	output reg [31:0] mem_la_wdata,
 	output reg [ 3:0] mem_la_wstrb,
 
-	// Pico Co-Processor Interface (PCPI)
+	// Pico Co-Processor Interface (PCPI)：把乘除法或自訂指令交給外部運算單元。
 	output reg        pcpi_valid,
 	output reg [31:0] pcpi_insn,
 	output     [31:0] pcpi_rs1,
@@ -116,7 +122,7 @@ module picorv32 #(
 	input             pcpi_wait,
 	input             pcpi_ready,
 
-	// IRQ Interface
+	// IRQ Interface：PicoRV32 的輕量自訂 IRQ，不是標準 RISC-V PLIC/CLINT。
 	input      [31:0] irq,
 	output reg [31:0] eoi,
 
@@ -154,7 +160,7 @@ module picorv32 #(
 	output reg [63:0] rvfi_csr_minstret_wdata,
 `endif
 
-	// Trace Interface
+	// Trace Interface：ENABLE_TRACE=1 時輸出執行/branch/IRQ trace，主要供模擬除錯。
 	output reg        trace_valid,
 	output reg [35:0] trace_data
 );
@@ -166,6 +172,7 @@ module picorv32 #(
 	localparam integer regfile_size = (ENABLE_REGS_16_31 ? 32 : 16) + 4*ENABLE_IRQ*ENABLE_IRQ_QREGS;
 	localparam integer regindex_bits = (ENABLE_REGS_16_31 ? 5 : 4) + ENABLE_IRQ*ENABLE_IRQ_QREGS;
 
+	// 內建乘除法也透過 PCPI 接回 CPU，因此任一功能開啟就必須保留 PCPI 控制路徑。
 	localparam WITH_PCPI = ENABLE_PCPI || ENABLE_MUL || ENABLE_FAST_MUL || ENABLE_DIV;
 
 	localparam [35:0] TRACE_BRANCH = {4'b 0001, 32'b 0};
@@ -347,6 +354,8 @@ module picorv32 #(
 
 
 	// Memory Interface
+	// mem_do_* 是 CPU 對 memory controller 的內部請求；mem_state 再把它轉成外部 valid/ready。
+	// state 0=idle/發起、1=read 等待、2=write 等待、3=prefetch 已完成但尚未被取指使用。
 
 	reg [1:0] mem_state;
 	reg [1:0] mem_wordsize;
@@ -369,6 +378,7 @@ module picorv32 #(
 	wire [31:0] mem_rdata_latched_noshuffle;
 	wire [31:0] mem_rdata_latched;
 
+	// RVC 可能從 32-bit word 的高 16 bit 開始，甚至跨到下一個 word；buffer 避免重複讀取。
 	wire mem_la_use_prefetched_high_word = COMPRESSED_ISA && mem_la_firstword && prefetched_high_word && !clear_prefetched_high_word;
 	assign mem_xfer = (mem_valid && mem_ready) || (mem_la_use_prefetched_high_word && mem_do_rinst);
 
@@ -399,6 +409,7 @@ module picorv32 #(
 	end
 
 	always @* begin
+		// 將 word/halfword/byte 存取轉成 32-bit bus 的 byte enable，load 則挑出正確 lane。
 		(* full_case *)
 		case (mem_wordsize)
 			0: begin
@@ -433,6 +444,7 @@ module picorv32 #(
 			next_insn_opcode <= COMPRESSED_ISA ? mem_rdata_latched : mem_rdata;
 		end
 
+		// 將 16-bit compressed instruction 展開成等價的 32-bit 內部格式，後續共用同一套 decoder。
 		if (COMPRESSED_ISA && mem_done && (mem_do_prefetch || mem_do_rinst)) begin
 			case (mem_rdata_latched[1:0])
 				2'b00: begin // Quadrant 0
@@ -642,6 +654,7 @@ module picorv32 #(
 
 
 	// Instruction Decoder
+	// 每個 instr_* 代表一種已辨識的 instruction；後續用預先分組的 is_* 訊號縮短組合路徑。
 
 	reg instr_lui, instr_auipc, instr_jal, instr_jalr;
 	reg instr_beq, instr_bne, instr_blt, instr_bge, instr_bltu, instr_bgeu;
@@ -1169,6 +1182,7 @@ module picorv32 #(
 
 	// Main State Machine
 
+	// 主控制採 one-hot state。這是多週期核心，不是固定五級 pipeline。
 	localparam cpu_state_trap   = 8'b10000000;
 	localparam cpu_state_fetch  = 8'b01000000;
 	localparam cpu_state_ld_rs1 = 8'b00100000;
@@ -1179,6 +1193,7 @@ module picorv32 #(
 	localparam cpu_state_ldmem  = 8'b00000001;
 
 	reg [7:0] cpu_state;
+	// IRQ entry 分兩步保存 return PC/IRQ mask，再跳到 PROGADDR_IRQ。
 	reg [1:0] irq_state;
 
 	`FORMAL_KEEP reg [127:0] dbg_ascii_state;
@@ -1483,6 +1498,7 @@ module picorv32 #(
 			cpu_state <= cpu_state_fetch;
 		end else
 		(* parallel_case, full_case *)
+		// 一條指令依需求走 fetch → 讀 operand → execute → 可選 memory/shift → fetch。
 		case (cpu_state)
 			cpu_state_trap: begin
 				trap <= 1;
@@ -2166,6 +2182,8 @@ module picorv32 #(
 `endif
 endmodule
 
+// 這是 PICORV32_REGS 的最小範例。實際 FPGA 可替換成 vendor RAM wrapper，
+// 但 read/write latency 與 IRQ Q-register 數量必須符合 core 設定。
 // This is a simple example implementation of PICORV32_REGS.
 // Use the PICORV32_REGS mechanism if you want to use custom
 // memory resources to implement the processor register file.
@@ -2245,6 +2263,7 @@ module picorv32_pcpi_mul #(
 	reg mul_finish;
 	integer i, j;
 
+	// 迭代式 shift-and-add 乘法器。STEPS_AT_ONCE 越大，cycle 較少但組合路徑/面積較大。
 	// carry save accumulator
 	always @* begin
 		next_rd = rd;
@@ -2316,6 +2335,7 @@ module picorv32_pcpi_mul #(
 endmodule
 
 module picorv32_pcpi_fast_mul #(
+	// 這個版本傾向讓 synthesis tool 使用 FPGA DSP/硬體乘法器；速度快但資源成本較高。
 	parameter EXTRA_MUL_FFS = 0,
 	parameter EXTRA_INSN_FFS = 0,
 	parameter MUL_CLKGATE = 0
@@ -2418,6 +2438,7 @@ endmodule
  ***************************************************************/
 
 module picorv32_pcpi_div (
+	// 逐 bit 的 restoring division，同時支援 signed/unsigned quotient 與 remainder。
 	input clk, resetn,
 
 	input             pcpi_valid,
@@ -2515,6 +2536,7 @@ endmodule
  ***************************************************************/
 
 module picorv32_axi #(
+	// 包裝結構：picorv32 core 仍說 Native interface，再由下方 adapter 轉 AXI4-Lite。
 	parameter [ 0:0] ENABLE_COUNTERS = 1,
 	parameter [ 0:0] ENABLE_COUNTERS64 = 1,
 	parameter [ 0:0] ENABLE_REGS_16_31 = 1,
@@ -2765,6 +2787,8 @@ module picorv32_axi_adapter (
 	input  [ 3:0] mem_wstrb,
 	output [31:0] mem_rdata
 );
+	// AXI write address、write data 是獨立 channel，ack_* 分別記住已完成的 handshake，
+	// 避免 target 尚未回 B response 時重送同一個 channel。
 	reg ack_awvalid;
 	reg ack_arvalid;
 	reg ack_wvalid;
@@ -2813,6 +2837,7 @@ endmodule
  ***************************************************************/
 
 module picorv32_wb #(
+	// Wishbone wrapper；CPU 執行核心與 Native/AXI 版本相同，只有外部 bus protocol 不同。
 	parameter [ 0:0] ENABLE_COUNTERS = 1,
 	parameter [ 0:0] ENABLE_COUNTERS64 = 1,
 	parameter [ 0:0] ENABLE_REGS_16_31 = 1,

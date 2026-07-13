@@ -2,9 +2,9 @@
 
 start:
 
-# zero-initialize register file
+# 清除 register file。x0 固定為 0；x2 (sp) 已由 CPU reset logic 設成 STACKADDR。
 addi x1, zero, 0
-# x2 (sp) is initialized by reset
+# x2 (sp) 不可在這裡清成 0
 addi x3, zero, 0
 addi x4, zero, 0
 addi x5, zero, 0
@@ -35,24 +35,24 @@ addi x29, zero, 0
 addi x30, zero, 0
 addi x31, zero, 0
 
-# Update LEDs
+# LED=1：已完成 register 初始化，可用 LED pattern 判斷開機卡在哪個階段。
 li a0, 0x03000000
 li a1, 1
 sw a1, 0(a0)
 
-# zero initialize entire scratchpad memory
+# 清除整個 scratchpad RAM，從位址 0 一直寫到 sp（RAM 尾端）。
 li a0, 0x00000000
 setmemloop:
 sw a0, 0(a0)
 addi a0, a0, 4
 blt a0, sp, setmemloop
 
-# Update LEDs
+# LED=3：RAM 清除完成
 li a0, 0x03000000
 li a1, 3
 sw a1, 0(a0)
 
-# copy data section
+# 把有初始值的 .data 從 Flash load address (_sidata) 搬到 RAM (_sdata.._edata)。
 la a0, _sidata
 la a1, _sdata
 la a2, _edata
@@ -65,12 +65,12 @@ addi a1, a1, 4
 blt a1, a2, loop_init_data
 end_init_data:
 
-# Update LEDs
+# LED=7：.data 搬移完成
 li a0, 0x03000000
 li a1, 7
 sw a1, 0(a0)
 
-# zero-init bss section
+# 清除未初始化的全域/靜態變數區 .bss。
 la a0, _sbss
 la a1, _ebss
 bge a0, a1, end_init_bss
@@ -80,12 +80,12 @@ addi a0, a0, 4
 blt a0, a1, loop_init_bss
 end_init_bss:
 
-# Update LEDs
+# LED=15：C runtime 準備完成
 li a0, 0x03000000
 li a1, 15
 sw a1, 0(a0)
 
-# call main
+# 進入 C main；如果 main return，就留在下面的無限迴圈，避免跑進未知內容。
 call main
 loop:
 j loop
@@ -96,21 +96,20 @@ j loop
 .balign 4
 
 flashio_worker_begin:
-# a0 ... data pointer
-# a1 ... data length
-# a2 ... optional WREN cmd (0 = disable)
+# 這段函式執行時會先被 C code 複製到 RAM，因為切換 Flash 到 manual mode 後不能同時從 Flash 取指。
+# a0：資料 buffer；a1：byte 數；a2：可選 WREN command（0 表示不用）
 
-# address of SPI ctrl reg
+# SPI controller config register 位址
 li   t0, 0x02000000
 
-# Set CS high, IO0 is output
+# CS 維持 high，IO0 設為 output
 li   t1, 0x120
 sh   t1, 0(t0)
 
-# Enable Manual SPI Ctrl
+# 開啟 manual SPI control；接下來每次 register write 直接驅動 pin
 sb   zero, 3(t0)
 
-# Send optional WREN cmd
+# 如果 a2 非零，先送出 write-enable command
 beqz a2, flashio_worker_L1
 li   t5, 8
 andi t2, a2, 0xff
@@ -125,7 +124,7 @@ addi t5, t5, -1
 bnez t5, flashio_worker_L4
 sb   t1, 0(t0)
 
-# SPI transfer
+# 逐 byte、逐 bit 進行 full-duplex SPI transfer
 flashio_worker_L1:
 beqz a1, flashio_worker_L3
 li   t5, 8
@@ -149,7 +148,7 @@ addi a1, a1, -1
 j    flashio_worker_L1
 flashio_worker_L3:
 
-# Back to MEMIO mode
+# 回到 memory-mapped XIP mode，return 後 CPU 才能繼續從 Flash 取指
 li   t1, 0x80
 sb   t1, 3(t0)
 

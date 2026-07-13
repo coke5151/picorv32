@@ -18,6 +18,7 @@
  */
 
 module hx8kdemo (
+	// iCE40-HX8K breakout board top；實際 pin 由 hx8kdemo.pcf 決定。
 	input clk,
 
 	output ser_tx,
@@ -42,6 +43,7 @@ module hx8kdemo (
 	output debug_flash_io2,
 	output debug_flash_io3
 );
+	// 簡單 power-on reset：counter 全為 1 後才讓 resetn=1。
 	reg [5:0] reset_cnt = 0;
 	wire resetn = &reset_cnt;
 
@@ -71,6 +73,7 @@ module hx8kdemo (
 	wire [31:0] iomem_wdata;
 	reg  [31:0] iomem_rdata;
 
+	// 0x03xx_xxxx MMIO GPIO，低 byte 直接顯示在八顆 LED。
 	reg [31:0] gpio;
 	assign leds = gpio;
 
@@ -127,6 +130,7 @@ module hx8kdemo (
 		.iomem_rdata  (iomem_rdata )
 	);
 
+	// 額外導出內部訊號，方便接 logic analyzer；不參與 SoC 功能。
 	assign debug_ser_tx = ser_tx;
 	assign debug_ser_rx = ser_rx;
 

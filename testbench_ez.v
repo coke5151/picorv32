@@ -8,6 +8,8 @@
 `timescale 1 ns / 1 ps
 
 module testbench;
+	// 最小教學用 testbench：直接在 Verilog memory 放幾條 instruction，不需要 RISC-V compiler。
+	// 觀察 mem_valid/mem_ready 可快速理解 Native Memory Interface。
 	reg clk = 1;
 	reg resetn = 0;
 	wire trap;

@@ -19,6 +19,8 @@
  */
 
 module ice40up5k_spram #(
+	// 四個 16-bit SB_SPRAM256KA 組成 32-bit、可逐 byte write 的 RAM。
+	// 這是 iCE40-UP5K 專用 primitive wrapper，其他 FPGA family 需要替換。
 	// We current always use the whole SPRAM (128 kB)
 	parameter integer WORDS = 32768
 ) (

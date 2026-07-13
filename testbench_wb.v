@@ -2,6 +2,7 @@
 
 `ifndef VERILATOR
 module testbench #(
+	// Wishbone 版本測試入口，流程與根目錄 testbench 類似但 bus 換成 Wishbone。
 	parameter VERBOSE = 0
 );
 	reg clk = 1;
@@ -187,6 +188,7 @@ endmodule
  */
 
 module wb_ram #(
+	// testbench 用 Wishbone RAM/MMIO model；ack 是 CPU 完成 transaction 的依據。
 	parameter depth = 256,
 	parameter memfile = "",
 	parameter VERBOSE = 0

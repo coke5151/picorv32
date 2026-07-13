@@ -18,6 +18,7 @@
  */
 
 module simpleuart #(parameter integer DEFAULT_DIV = 1) (
+	// 最小 8N1 UART，無 parity/flow control。divider 與實際 clk 不符時，終端機會看到亂碼。
 	input clk,
 	input resetn,
 
@@ -49,9 +50,11 @@ module simpleuart #(parameter integer DEFAULT_DIV = 1) (
 
 	assign reg_div_do = cfg_divider;
 
+	// TX 忙碌時拉高 wait，PicoSoC 因而不回 mem_ready；CPU 的 store 會停到 UART 可接受資料。
 	assign reg_dat_wait = reg_dat_we && (send_bitcnt || send_dummy);
 	assign reg_dat_do = recv_buf_valid ? recv_buf_data : ~0;
 
+	// 可用 byte write 更新 divider；軟體通常一次寫完整 32-bit。
 	always @(posedge clk) begin
 		if (!resetn) begin
 			cfg_divider <= DEFAULT_DIV;
@@ -63,6 +66,7 @@ module simpleuart #(parameter integer DEFAULT_DIV = 1) (
 		end
 	end
 
+	// RX state 0 等 start bit，state 1 對準 bit 中央，state 2~9 收 8 data bits，state 10 收尾。
 	always @(posedge clk) begin
 		if (!resetn) begin
 			recv_state <= 0;
@@ -104,6 +108,7 @@ module simpleuart #(parameter integer DEFAULT_DIV = 1) (
 		end
 	end
 
+	// frame 順序為 start(0)、8 data bits LSB first、stop(1)。shift register 空閒時維持高電位。
 	assign ser_tx = send_pattern[0];
 
 	always @(posedge clk) begin
