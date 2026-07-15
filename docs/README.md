@@ -12,6 +12,8 @@
 5. [模擬與除錯](05-simulation-and-debug.md)：先在模擬器證明硬體和程式正確，再燒板。
 6. [FPGA 實作流程](06-fpga-bringup.md)：時脈、reset、pin constraint、合成、place-and-route、燒錄。
 7. [移植到自己的板子](07-porting-checklist.md)：逐項替換板級 top module，避免常見硬體問題。
+8. [RTL 模組完整索引](08-rtl-module-reference.md)：逐一查 41 個 Verilog 檔、61 個 module 的用途與邊界。
+9. [軟體與工具鏈索引](09-source-and-tooling-reference.md)：串起 firmware、linker、測試與各 EDA script。
 
 ## 最短實作路線
 
@@ -60,3 +62,7 @@
 
 不要只看訊號名稱猜行為；把波形裡的 `mem_valid`、`mem_ready`、`mem_addr`、`mem_wstrb`
 放在一起看，通常最快。
+
+若遇到多個都叫 `testbench`、`top` 或 `system` 的模組，請一定連同路徑一起辨識；它們是不同、彼此
+獨立的建置情境，不應同時編入同一個 design。完整對照見
+[RTL 模組完整索引](08-rtl-module-reference.md)。

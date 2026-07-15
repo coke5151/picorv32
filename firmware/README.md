@@ -30,3 +30,6 @@ RISC-V instruction tests、C 測試、IRQ 與乘法/除法測試，最後由 tes
 - `-march` 必須符合 testbench 實例化的 core parameter。
 - testbench 使用特殊 MMIO address 收集字元、結束狀態與測試結果；這些 address 不一定存在於 FPGA。
 - `firmware/README` 是上游留下的簡短英文說明，本檔補充繁中學習導覽。
+
+完整的 startup、linker、ISA tests 與 build artifact 對照見
+[`../docs/09-source-and-tooling-reference.md`](../docs/09-source-and-tooling-reference.md)。

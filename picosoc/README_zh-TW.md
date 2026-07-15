@@ -47,3 +47,6 @@ Makefile 變數調整。
 完整 memory map 與移植重點請看 [`../docs/03-picosoc-memory-map.md`](../docs/03-picosoc-memory-map.md)
 和 [`../docs/07-porting-checklist.md`](../docs/07-porting-checklist.md)。原本的 `README.md` 保留上游
 英文的 register bit 定義與 performance 表格，查 SPI config register 時仍很有用。
+
+若要逐一查 `picosoc_regs`、`picosoc_mem`、`spimemio_xfer`、Flash model 與各板 testbench 的邊界，
+可直接看 [`../docs/08-rtl-module-reference.md`](../docs/08-rtl-module-reference.md) 的 PicoSoC 章節。

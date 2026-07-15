@@ -25,3 +25,7 @@
 結構搬進對應 vendor project。
 
 不要直接使用別塊板子的 PCF/XDC/QSF；即使 FPGA part 相同，pin 和電壓也可能不同。
+
+每個 Verilog `testbench`／`top` 的實際證明或量測目的，請查
+[`../docs/08-rtl-module-reference.md`](../docs/08-rtl-module-reference.md)；各子目錄的輸入、產物與外部
+依賴則整理在 [`../docs/09-source-and-tooling-reference.md`](../docs/09-source-and-tooling-reference.md)。

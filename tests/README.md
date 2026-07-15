@@ -19,3 +19,6 @@
 的寫法。
 
 這些測試適合驗證 CPU 修改沒有破壞 ISA；它們不能取代 SoC 的 UART、Flash、GPIO 與 timing 測試。
+
+若要理解這些 `.S` 如何被包成函式、連進同一份 test firmware，再由 testbench 回報結果，請看
+[`../docs/09-source-and-tooling-reference.md`](../docs/09-source-and-tooling-reference.md)。
