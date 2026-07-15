@@ -7,6 +7,8 @@
 // simulates ROM by suppressing writes below this address
 `define ROM_SIZE 32'h0001_00FF
 
+// ROM loader 整合測試：boot image 從 ROM 開始執行，把 application 載入可寫 memory，
+// 最後透過 console MMIO 回報；此處驗證完整開機流程，不只測 CPU core。
 module testbench;
 	reg clk = 1;
 	reg resetn = 0;

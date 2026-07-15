@@ -8,6 +8,8 @@
 `timescale 1 ns / 1 ps
 
 `ifndef VERILATOR
+// 根目錄完整回歸的模擬入口：建立 clock/reset，收集 VCD/trace，並提供 timeout。
+// 真正的 DUT、IRQ 與 memory/MMIO model 位於同檔的 picorv32_wrapper。
 module testbench #(
 	// 完整回歸測試平台，可依 parameter 切換 Native/AXI、memory latency 與 CPU 功能。
 	parameter AXI_TEST = 0,
@@ -65,6 +67,8 @@ module testbench #(
 endmodule
 `endif
 
+// 模擬專用的 CPU system wrapper。AXI_TEST 決定使用 AXI wrapper 或 Native core，
+// firmware 透過特殊 MMIO 位址輸出字元、回報 individual test 與結束狀態。
 module picorv32_wrapper #(
 	// 將待測 core、memory model 與 testbench MMIO 接在一起；不是 FPGA 板級 top。
 	parameter AXI_TEST = 0,
@@ -276,6 +280,8 @@ module picorv32_wrapper #(
 	end
 endmodule
 
+// 支援獨立 AW/W/B/AR/R back-pressure 的 AXI memory model，刻意允許不同 channel latency，
+// 用來抓出只在所有 channel 同步 ready 時才會工作的錯誤 adapter 實作。
 module axi4_memory #(
 	// 簡化的 AXI4-Lite memory model，只供模擬驗證 wrapper handshake。
 	parameter AXI_TEST = 0,

@@ -1,5 +1,7 @@
 `timescale 1 ns / 1 ps
 
+// 最小可合成 iCE40 範例：包含 reset generator、PicoRV32、inferred RAM 與 LED MMIO。
+// 此設計刻意比 PicoSoC 簡單，沒有 SPI Flash XIP 或 UART peripheral。
 module top (
 	input clk,
 	output reg LED0, LED1, LED2, LED3, LED4, LED5, LED6, LED7

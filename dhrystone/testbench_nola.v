@@ -2,6 +2,8 @@
 
 `timescale 1 ns / 1 ps
 
+// Dhrystone 的 Native valid/ready 對照平台，不使用 look-ahead interface。
+// 和 testbench.v 比較時，差異主要反映 memory handshake 路徑而非 benchmark 本身。
 module testbench;
 	reg clk = 1;
 	reg resetn = 0;

@@ -36,6 +36,8 @@
 //    https://www.winbond.com/resource-files/w25q128jv%20dtr%20revb%2011042016.pdf
 //
 
+// 模擬專用 SPI Flash behavioral model。它解析 PicoSoC 使用的 single/dual/quad/DDR read
+// command 並從檔案初始化內容；不是可綜合的 Flash controller，也不模型化所有 datasheet timing。
 module spiflash (
 	input csb,
 	input clk,

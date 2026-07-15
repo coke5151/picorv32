@@ -1,3 +1,5 @@
+// 證明迭代式與快速 PCPI multiplier 對任意 RV32M 指令／operand 都回傳相同結果。
+// 兩者完成 latency 可以不同，因此先鎖存各自結果，再進行等價比較。
 module testbench(input clk, mem_ready_0, mem_ready_1);
 
 	reg resetn = 0;

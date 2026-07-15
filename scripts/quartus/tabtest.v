@@ -1,4 +1,6 @@
 
+// Timing analysis wrapper：在每個外部 AXI/IRQ pin 與 core 之間插入四級 register。
+// 額外 latency 用來隔離 I/O timing；此拓撲供工具量測，不是可正常執行的 AXI system。
 module top (
 	input clk, io_resetn,
 	output io_trap,
@@ -100,6 +102,8 @@ module top (
 	);
 endmodule
 
+// 每個 tabtest 訊號共用的可參數化四級 pipeline。此模組刻意沒有 reset，
+// 因此前四拍 pipeline 尚未填滿時，外部驗證必須忽略輸出。
 module delay4 #(
 	parameter WIDTH = 1
 ) (

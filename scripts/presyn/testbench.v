@@ -1,3 +1,5 @@
+// Gate/presynthesis 模擬平台。使用簡單 Native memory model 驅動綜合後的 PicoRV32 boundary，
+// 並輸出 VCD，供 RTL 與 technology-mapped netlist 行為比對。
 module testbench;
 	reg clk = 1;
 	always #5 clk = ~clk;
@@ -66,6 +68,8 @@ module testbench;
 	end
 endmodule
 
+// presynthesis technology-mapped boundary 使用的同步雙讀 register-file model。
+// A1/A2/B1 這組特殊命名是生成 netlist 的介面契約，不是公開的 PicoRV32 core port 名稱。
 module picorv32_regs (
 	input [4:0] A1ADDR, A2ADDR, B1ADDR,
 	output reg [31:0] A1DATA, A2DATA,

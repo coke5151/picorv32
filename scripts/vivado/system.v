@@ -1,5 +1,7 @@
 `timescale 1 ns / 1 ps
 
+// Vivado 實驗使用的小型可合成 CPU+RAM+console system。FAST_MEMORY 選擇 look-ahead，
+// 或較保守的 Native valid/ready 路徑；對 0x1000_0000 寫入會輸出一個 byte。
 module system (
 	input            clk,
 	input            resetn,

@@ -19,6 +19,8 @@
 
 `timescale 1 ns / 1 ps
 
+// iCEBreaker 板級模擬：以 behavioral Flash 和 UART sampler 包住 icebreaker top，
+// 驗證從 reset、XIP startup 到 firmware serial output 的整條路徑。
 module testbench;
 	reg clk;
 	always #5 clk = (clk === 1'b0);

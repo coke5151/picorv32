@@ -19,6 +19,8 @@
 
 `timescale 1 ns / 1 ps
 
+// iCE40-HX8K demo board 的板級模擬，包含 Flash model、UART sampling、LED 與 timeout。
+// 它驗證的是 example wiring，不取代實際 PCF、電壓與真板 clock/reset 檢查。
 module testbench;
 	reg clk;
 	always #5 clk = (clk === 1'b0);

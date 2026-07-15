@@ -1,5 +1,7 @@
 `timescale 1 ns / 1 ps
 
+// Dhrystone benchmark 的零等待模擬 memory，利用 look-ahead interface 提前取址/寫入。
+// 此配置用於估算 core cycle 表現；不能代表具有相同 latency 的所有真實 FPGA RAM。
 module testbench;
 	reg clk = 1;
 	reg resetn = 0;

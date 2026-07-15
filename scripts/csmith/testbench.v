@@ -1,5 +1,7 @@
 `timescale 1 ns / 1 ps
 
+// Csmith 隨機 C 程式的模擬平台。產生的 firmware 在大型 Native memory 上執行，
+// 再以特殊 MMIO write 回報結果，供外層 script 和 reference run 比對。
 module testbench (
 `ifdef VERILATOR
 	input clk

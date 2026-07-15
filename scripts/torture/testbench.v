@@ -1,3 +1,5 @@
+// riscv-torture workload 的壓力測試平台，提供可調的 memory-ready timing、console/result MMIO，
+// 並檢查未知位址或已啟用 write byte 中的 X 值；這不是可合成的系統。
 module testbench (
 `ifdef VERILATOR
 	input clk

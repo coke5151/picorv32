@@ -33,6 +33,8 @@
 // design are read in the correct order.
 `define PICOSOC_V
 
+// PicoSoC 的中央整合與 address decoder：連接 CPU、scratchpad、SPI Flash XIP、UART，
+// 並把使用者 MMIO 範圍轉送到 iomem_*。每個 target 必須只在被選中時拉高 ready。
 module picosoc (
 	// PicoSoC 中央整合模組：CPU 的每筆 load/store/fetch 都在這裡 decode 到 RAM、Flash、UART 或外部 I/O。
 	input clk,
@@ -232,6 +234,8 @@ endmodule
 // 實作提醒：下面是可攜的 behavioral array。換 FPGA 時可用 wrapper 替換成 block RAM/SPRAM primitive，
 // 但必須維持相同介面時序。PICOSOC_MEM macro 就是供板級 top 選擇替代 RAM。
 
+// PicoSoC 選用的雙讀 register file。介面必須符合 PICORV32_REGS contract；
+// 6-bit 位址同時容納一般 x register 與啟用 IRQ_QREGS 時的 q register。
 module picosoc_regs (
 	input clk, wen,
 	input [5:0] waddr,
@@ -250,6 +254,8 @@ module picosoc_regs (
 	assign rdata2 = regs[raddr2[4:0]];
 endmodule
 
+// 可攜式 scratchpad RAM fallback：32-bit word array、四個 byte write enable、同步讀取。
+// 板級 top 可用 PICOSOC_MEM 替換為 vendor block RAM/SPRAM，但要維持相同 request latency。
 module picosoc_mem #(
 	parameter integer WORDS = 256
 ) (

@@ -1,3 +1,5 @@
+// 兩個相同 AXI PicoRV32 instance 的等價性驗證平台。在 handshake 條件相同且共用 response 時，
+// 兩個 master 必須產生相同的 request、payload、ready 訊號與 trap 狀態。
 module testbench (
 	input         clk,
 	input         resetn,

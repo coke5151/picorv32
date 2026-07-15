@@ -3,6 +3,8 @@
 `undef WRITE_VCD
 `undef MEM8BIT
 
+// Bare-metal C++ 模擬平台。載入連結後的 firmware image，提供 Native memory 與 console MMIO；
+// 除了 CPU 執行，也同時驗證 startup、constructor 與 linker script 的整合。
 module testbench;
 	reg clk = 1;
 	reg resetn = 0;

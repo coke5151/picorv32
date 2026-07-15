@@ -1,3 +1,5 @@
+// 證明在 memory stall 有上限，且取回的都是支援、非控制流／非記憶體指令時，core 不會進入 trap。
+// 下方 assumption 是證明範圍的一部分；修改它們也會改變實際被證明的性質。
 module testbench(input clk, mem_ready);
 	`include "opcode.v"
 

@@ -1,3 +1,5 @@
+// 比較兩個可使用不同微架構參數之 core 的 trace 等價性。每個 core 有各自的 memory timing；
+// 此處以退休指令 trace 的順序定義等價，而不是要求兩者每個 cycle 完全同步。
 module testbench(input clk, mem_ready_0, mem_ready_1);
 	// set this to 1 to test generation of counter examples
 	localparam ENABLE_COUNTERS = 0;

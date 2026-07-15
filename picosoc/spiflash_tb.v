@@ -19,6 +19,8 @@
 
 `timescale 1 ns / 1 ps
 
+// spimemio 的獨立模擬平台：直接切換 controller config，搭配 behavioral spiflash
+// 驗證 single/dual/quad/DDR read data 與交易流程，不包含 CPU 或完整 PicoSoC。
 module testbench;
 	reg flash_csb = 1;
 	reg flash_clk = 0;

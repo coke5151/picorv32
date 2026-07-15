@@ -1,4 +1,6 @@
 
+// 面積量測用最小配置，關閉 counter 與部分 safety/shift 邏輯。
+// 這是 synthesis benchmark boundary，不是可獨立執行的完整 SoC。
 module top_small (
 	input clk, resetn,
 
@@ -30,6 +32,7 @@ module top_small (
 	);
 endmodule
 
+// 面積量測的預設基準配置，保留 core 預設功能並暴露 look-ahead interface。
 module top_regular (
 	input clk, resetn,
 	output trap,
@@ -69,6 +72,7 @@ module top_regular (
 	);
 endmodule
 
+// 大型功能配置，啟用 RVC、barrel shifter、PCPI/multiply 與 IRQ port 以量測資源上限。
 module top_large (
 	input clk, resetn,
 	output trap,

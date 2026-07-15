@@ -1,3 +1,5 @@
+// generic Yosys gate library 實驗使用的最小面積 synthesis top。刻意關閉部分可選安全／效能功能，
+// 並只暴露 Native Memory Interface；它是量測 boundary，不是完整 SoC。
 module top (
 	input clk, resetn,
 

@@ -1,5 +1,7 @@
 `timescale 1 ns / 1 ps
 
+// Tom Verbeure random instruction generator 輸出的模擬平台。firmware 會把失敗 case 編號，
+// 或代表成功的全 1 結果碼寫到下方監看的 result MMIO 位址。
 module testbench;
 	reg clk = 1;
 	reg resetn = 0;

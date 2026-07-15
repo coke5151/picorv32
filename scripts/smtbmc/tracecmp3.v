@@ -1,6 +1,8 @@
 // Based on the benchmark from 2016 Yosys-SMTBMC presentation, which in turn is
 // based on the tracecmp2 test from this directory.
 
+// 比較參考執行與外接 PCPI response 之 core 的形式等價性平台。
+// 透過共用的 memory observation 與 trace assertion 限制兩邊可觀察行為必須一致。
 module testbench (
 	input clk,
 	input [31:0] mem_rdata_in,

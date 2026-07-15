@@ -59,6 +59,8 @@
  * picorv32
  ***************************************************************/
 
+// 可合成的 PicoRV32 執行核心。這裡只提供 CPU 與 Native Memory/PCPI/IRQ/trace 介面，
+// 不包含 RAM、匯流排 address decode 或 peripheral；整合範例請看 picosoc/picosoc.v。
 module picorv32 #(
 	// 功能/面積參數：關閉功能通常可省 LUT，但 compiler 的 -march 必須和硬體一致。
 	parameter [ 0:0] ENABLE_COUNTERS = 1,
@@ -2189,6 +2191,8 @@ endmodule
 // memory resources to implement the processor register file.
 // Note that your implementation must match the requirements of
 // the PicoRV32 configuration. (e.g. QREGS, etc)
+// 預設的非同步雙讀 register-file 範例；若改用 vendor RAM，必須維持 PICORV32_REGS
+// 所要求的讀寫 latency、位址寬度，以及 IRQ Q-register 的配置。
 module picorv32_regs (
 	input clk, wen,
 	input [5:0] waddr,
@@ -2212,6 +2216,8 @@ endmodule
  * picorv32_pcpi_mul
  ***************************************************************/
 
+// 面積導向的迭代式 RV32M multiplier。STEPS_AT_ONCE 增加每拍處理的 bit 數，
+// CARRY_CHAIN 則切分加法進位鏈；兩者會同時影響 latency、面積與最高頻率。
 module picorv32_pcpi_mul #(
 	parameter STEPS_AT_ONCE = 1,
 	parameter CARRY_CHAIN = 4
@@ -2334,6 +2340,8 @@ module picorv32_pcpi_mul #(
 	end
 endmodule
 
+// 速度導向的 PCPI multiplier，直接描述寬乘法以利工具推導 DSP/multiplier primitive。
+// 它和迭代式 ENABLE_MUL 是替代方案，不應在同一 CPU configuration 同時啟用。
 module picorv32_pcpi_fast_mul #(
 	// 這個版本傾向讓 synthesis tool 使用 FPGA DSP/硬體乘法器；速度快但資源成本較高。
 	parameter EXTRA_MUL_FFS = 0,
@@ -2437,6 +2445,8 @@ endmodule
  * picorv32_pcpi_div
  ***************************************************************/
 
+// 迭代式 DIV/DIVU/REM/REMU 單元；start 後保持 pcpi_wait，完成的單一 cycle
+// 拉高 pcpi_ready/pcpi_wr。符號修正、除零與最小負數除以 -1 都在此處處理。
 module picorv32_pcpi_div (
 	// 逐 bit 的 restoring division，同時支援 signed/unsigned quotient 與 remainder。
 	input clk, resetn,
@@ -2535,6 +2545,8 @@ endmodule
  * picorv32_axi
  ***************************************************************/
 
+// AXI4-Lite master 包裝器：CPU 仍以單筆 Native transaction 運作，再由 adapter
+// 拆成 AXI 的獨立讀寫 channel。外部 interconnect/slave 仍負責 address decode。
 module picorv32_axi #(
 	// 包裝結構：picorv32 core 仍說 Native interface，再由下方 adapter 轉 AXI4-Lite。
 	parameter [ 0:0] ENABLE_COUNTERS = 1,
@@ -2750,6 +2762,8 @@ endmodule
  * picorv32_axi_adapter
  ***************************************************************/
 
+// Native-to-AXI4-Lite protocol adapter。AW 與 W 可在不同 cycle handshake；只有收到
+// B/R response 且完成 handshake 後才以 mem_ready 結束原本的 Native transaction。
 module picorv32_axi_adapter (
 	input clk, resetn,
 
@@ -2836,6 +2850,8 @@ endmodule
  * picorv32_wb
  ***************************************************************/
 
+// Wishbone master 包裝器。cyc/stb 維持到 ack，wbm_sel_o 直接對應 Native byte strobe；
+// 此層只轉換協定，不提供 RAM、timeout 或 address decode。
 module picorv32_wb #(
 	// Wishbone wrapper；CPU 執行核心與 Native/AXI 版本相同，只有外部 bus protocol 不同。
 	parameter [ 0:0] ENABLE_COUNTERS = 1,

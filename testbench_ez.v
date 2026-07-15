@@ -7,6 +7,8 @@
 
 `timescale 1 ns / 1 ps
 
+// 最小、零 toolchain 依賴的 Native Memory Interface 示範。instruction 直接寫在
+// Verilog array 裡；適合用波形觀察 mem_valid/mem_ready，而不是完整 ISA regression。
 module testbench;
 	// 最小教學用 testbench：直接在 Verilog memory 放幾條 instruction，不需要 RISC-V compiler。
 	// 觀察 mem_valid/mem_ready 可快速理解 Native Memory Interface。

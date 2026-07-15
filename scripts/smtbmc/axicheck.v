@@ -1,3 +1,5 @@
+// AXI wrapper 的形式驗證平台。由 solver 控制 ready/valid 來涵蓋各種 back-pressure；
+// assumption 限制 slave 回應時間，assertion 則檢查訊號穩定、交易順序及最多一筆 outstanding transfer。
 module testbench (
 	input         clk,
 	output        trap,

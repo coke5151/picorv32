@@ -1,5 +1,7 @@
 `timescale 1 ns / 1 ps
 
+// 最小 icestorm top 的模擬 smoke test，觀察 LED 並可選擇輸出 VCD。
+// 其中的 clock/reset generator 與 behavioral construct 只能用於模擬，不可合成進 FPGA。
 module testbench;
 	reg clk = 1;
 	always #5 clk = ~clk;

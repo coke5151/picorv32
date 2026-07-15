@@ -1,3 +1,5 @@
+// 使用共用任意 read data 與小型配對狀態機的 trace/memory 等價性驗證。
+// 狀態機先配對可能在不同 cycle 完成的交易，再比較位址及實際啟用的 write byte。
 module testbench(
 	input clk, mem_ready_0, mem_ready_1,
 	input [31:0] mem_rdata

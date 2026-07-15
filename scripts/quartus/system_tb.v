@@ -1,5 +1,7 @@
 `timescale 1 ns / 1 ps
 
+// Quartus example system 的模擬 driver：產生 clock/reset、印出 console byte、可選擇輸出 VCD，
+// 並在 trap/timeout 時停止；本模組不屬於 synthesis design。
 module system_tb;
 	reg clk = 1;
 	always #5 clk = ~clk;

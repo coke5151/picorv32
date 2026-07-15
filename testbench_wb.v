@@ -1,6 +1,7 @@
 `timescale 1 ns / 1 ps
 
 `ifndef VERILATOR
+// Wishbone 回歸的模擬入口：產生 clock/reset、trace 與整體 timeout。
 module testbench #(
 	// Wishbone 版本測試入口，流程與根目錄 testbench 類似但 bus 換成 Wishbone。
 	parameter VERBOSE = 0
@@ -56,6 +57,8 @@ module testbench #(
 endmodule
 `endif
 
+// 把 picorv32_wb、IRQ stimulus 與下方 wb_ram 接成可獨立模擬的系統。
+// wb_rst 在此流程是 active-high，傳給 CPU 前於 wrapper 內轉成 active-low resetn。
 module picorv32_wrapper #(
 	parameter VERBOSE = 0
 ) (
@@ -187,6 +190,8 @@ endmodule
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+// 模擬專用 Wishbone RAM/MMIO slave。只在 cyc && stb 的 request 上回 ack，
+// wb_sel_i 控制 byte lane；特殊 address 供 firmware 輸出與回報測試結果。
 module wb_ram #(
 	// testbench 用 Wishbone RAM/MMIO model；ack 是 CPU 完成 transaction 的依據。
 	parameter depth = 256,
